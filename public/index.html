@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#060916">
+  <meta name="description" content="繁星副官 Starry AI｜Starry.phd 生態系 AI 助理入口">
+  <title>繁星副官｜Starry AI</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#060916;color:#f5fbff;font-family:system-ui,-apple-system,"Noto Sans TC","Segoe UI",sans-serif}body{min-height:100dvh;background:radial-gradient(circle at 50% 20%,rgba(64,121,255,.18),transparent 34%),radial-gradient(circle at 85% 80%,rgba(142,79,255,.14),transparent 30%),#060916}.wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}.card{width:min(680px,100%);padding:42px 28px;border:1px solid rgba(139,216,255,.25);border-radius:28px;background:linear-gradient(160deg,rgba(10,20,44,.94),rgba(7,9,27,.96));box-shadow:0 30px 100px rgba(0,0,0,.42),0 0 60px rgba(71,141,255,.09);text-align:center}.mark{width:86px;height:86px;margin:0 auto 20px;display:grid;place-items:center;border:1px solid rgba(126,239,255,.45);border-radius:26px;background:linear-gradient(145deg,rgba(50,117,255,.25),rgba(129,72,255,.2));font-size:42px;box-shadow:0 0 34px rgba(80,179,255,.2)}.eyebrow{color:#8fcbff;font-size:12px;letter-spacing:.2em;text-transform:uppercase}.title{margin:10px 0 6px;font-size:clamp(34px,8vw,58px);letter-spacing:.03em}.sub{margin:0;color:#a8bed1;font-size:15px;line-height:1.8}.identity{margin:26px auto 0;padding:16px;border:1px solid rgba(151,216,255,.18);border-radius:18px;background:rgba(255,255,255,.03)}.identity strong{display:block;font-size:18px}.identity small{display:block;margin-top:4px;color:#9bb7ca}.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px}button,a.btn{appearance:none;border:0;border-radius:14px;min-height:46px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:700 14px/1 system-ui,-apple-system,"Noto Sans TC",sans-serif;cursor:pointer}.primary{color:#06111d;background:linear-gradient(135deg,#9af6ff,#8bb5ff)}.secondary{color:#eaf8ff;background:rgba(255,255,255,.06);border:1px solid rgba(150,218,255,.22)}.note{margin-top:28px;color:#7793aa;font-size:12px;line-height:1.7}.dot{display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%;background:#65f7c7;box-shadow:0 0 12px #65f7c7}.loading{opacity:.8}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <div class="mark" aria-hidden="true">✦</div>
+      <div class="eyebrow">STARRY.PHD · AI OFFICER</div>
+      <h1 class="title">繁星副官</h1>
+      <p class="sub">Starry AI 生態系智慧助理入口。<br>與繁星通行證共用同一個會員身份。</p>
+      <div id="identity" class="identity loading"><span class="dot"></span>正在確認繁星通行證…</div>
+      <div id="actions" class="actions"></div>
+      <p class="note">登入、登出或切換身份會與其他繁星生態 App 同步。</p>
+    </section>
+  </main>
+  <script>
+    const CENTRAL='https://id.starry.phd';
+    const identity=document.getElementById('identity');
+    const actions=document.getElementById('actions');
+    if(location.pathname.startsWith('/auth/callback')) history.replaceState({},'', '/');
+
+    async function session(){
+      try{
+        const r=await fetch(CENTRAL+'/api/ecosystem/session',{mode:'cors',credentials:'include',cache:'no-store'});
+        return r.ok?await r.json():{authenticated:false};
+      }catch{return {authenticated:false}}
+    }
+    async function logout(){
+      await fetch(CENTRAL+'/api/logout',{method:'POST',mode:'cors',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:'{}'}).catch(()=>{});
+      await render();
+    }
+    async function switchAccount(){
+      await fetch(CENTRAL+'/api/logout',{method:'POST',mode:'cors',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json'},body:'{}'}).catch(()=>{});
+      location.href=CENTRAL+'/auth/starry-ai?choose=1';
+    }
+    function login(){ location.href=CENTRAL+'/auth/starry-ai'; }
+    async function render(){
+      const data=await session();
+      identity.classList.remove('loading');
+      actions.innerHTML='';
+      if(data&&data.authenticated&&data.user){
+        const u=data.user;
+        identity.innerHTML='<strong>'+escapeHtml(u.name||u.email||'繁星會員')+'</strong><small>'+escapeHtml(u.rank||u.email||'已登入繁星通行證')+'</small>';
+        actions.innerHTML='<button class="secondary" id="switch">切換帳號</button><button class="secondary" id="logout">登出全部繁星 App</button>';
+        document.getElementById('switch').onclick=switchAccount;
+        document.getElementById('logout').onclick=logout;
+      }else{
+        identity.innerHTML='<strong>尚未登入</strong><small>登入一次即可通行繁星生態系</small>';
+        actions.innerHTML='<button class="primary" id="login">使用繁星通行證登入</button>';
+        document.getElementById('login').onclick=login;
+      }
+    }
+    function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    render();
+    addEventListener('focus',render);addEventListener('online',render);document.addEventListener('visibilitychange',()=>{if(!document.hidden)render()});
+  </script>
+</body>
+</html>
