@@ -1,0 +1,11 @@
+name = "starry-ai"
+compatibility_date = "2026-10-17"
+workers_dev = true
+
+[[routes]]
+pattern = "ai.starry.phd"
+custom_domain = true
+
+[assets]
+directory = "./public"
+not_found_handling = "single-page-application"
